@@ -1,9 +1,7 @@
 #! /usr/bin/env python
-import time,sys, getopt
+import time,sys, getopt, pymongo, re
 from xml.etree.ElementTree import *
 from xml.dom.minidom import parseString
-import pymongo
-
 from pymongo import Connection
 
 
@@ -49,7 +47,6 @@ if __name__ == "__main__":
 connection=Connection('qaclientconfigstore.lab', 27017)
 db=connection.configs
 
-
 clientProductFeed = open(outfile, 'w')
 generateDateTime = time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime())
 schemaVersion = 'http://www.bazaarvoice.com/xs/PRR/ProductFeed/' + schema
@@ -62,7 +59,6 @@ root.set('name', 'bazaarvoice')
 root.set('xmlns', schemaVersion)
 root.set('extractDate', generateDateTime)
 
-# 
 products = SubElement(root, 'Products')
 
 #query database for client name, logo name, and domain name
@@ -73,7 +69,6 @@ for row in clients:
 	productDesc = row['_client']['_name']
 	productUrl = 'http://'+row['_clientDomainNames'][0]
 	imageUrl = 'http://'+row['_client']['_name']+'.ugc.bazaarvoice.com/static/'+row['_displayCodeKey']+'/logo.gif'
-	
 	product = SubElement(products, 'Product')
 	externalIDNode = SubElement(product, 'ExternalId')
 	externalIDNode.text = product_id
@@ -86,4 +81,5 @@ for row in clients:
 	imageNode = SubElement(product, 'ImageUrl')
 	imageNode.text = imageUrl
 
-clientProductFeed.write(tostring(root))
+#pretty prints the xml and writes to file
+clientProductFeed.write(parseString(tostring(root)).toprettyxml())
