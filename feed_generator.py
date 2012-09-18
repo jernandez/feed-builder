@@ -66,7 +66,7 @@ root.set('extractDate', generateDateTime)
 products = SubElement(root, 'Products')
 
 #query database for client name, logo name, and domain name
-clients=list(db.sites.find({}, {'_displayCodeKey':1,'_client._name':1,'_clientDomainNames':1}))
+clients=list(db.sites.find({}, {'_displayCodeKey':1,'_client._name':1,'_clientDomainNames':1}).skip(0).limit(100))
 for row in clients:
 	product_id = row['_client']['_name']
 	productName = row['_client']['_name']
