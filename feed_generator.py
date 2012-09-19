@@ -118,4 +118,4 @@ for line in clientFile:
 	#	nameNode = SubElement(brand, 'Name')
 	#	nameNode.text = recordName
 		
-clientProductFeed.write(tostring(root))
+clientProductFeed.write(parseString(tostring(root)).toprettyxml())
