@@ -56,7 +56,7 @@ if __name__ == "__main__":
 clientFile = open(infile)
 clientProductFeed = open(outfile, 'w')
 generateDateTime = time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime())
-schemaVersion = 'http://www.bazaarvoice.com/xs/PRR/ProductFeed/' + schema
+schemaVersion = 'http://www.bazaarvoice.com/xs/PRR/StandardClientFeed/' + schema
 
 #build necessary header
 root = Element('Feed')
@@ -70,25 +70,21 @@ brands = SubElement(root, 'Brands')
 categories = SubElement(root, 'Categories')
 products = SubElement(root, 'Products')
 
-#
 
 for line in clientFile:
 	vals = line.split('	')
 	externalId = vals[0]
-	recordType = vals[1]
-	recordName = vals[2]
-	productDesc = vals[3]
-	productUrl = vals[4]
-	imageUrl = vals[5]
-	categoryId = vals[6]
+	question1 = vals[1]
+	answer1 = vals[2]
+	question2 = vals[3]
+	answer2 = vals[4]
+	question3 = vals[5]
+	answer3 = vals[6]
 
 	# pipe delimited values
 	manufactureNums = vals[7]
 	brand = vals[8]
-	locale  = vals[9]
-	ISBN = vals[10]
-	EAN = vals[11]
-	UPC = vals[12]
+
 
 
 	if recordType == 'Product':
