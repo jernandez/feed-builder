@@ -19,7 +19,7 @@ from xml.dom.minidom import parseString
 def main(argv):                         
               
     try:                                
-        opts, args = getopt.getopt(argv, "hc:i:o:s:", ["help", "clientname=", "infile=", "outfile=", "schema="]) 
+        opts, args = getopt.getopt(argv, "hc:i:o:s:v:", ["help", "clientname=", "infile=", "outfile=", "schema=", "incrementalValue="]) 
     except getopt.GetoptError:           
         usage()                          
         sys.exit(2)       
@@ -32,13 +32,17 @@ def main(argv):
     		clientName = arg
     	elif opt in ("-i", "--infile"):
     		global infile
-    		infile = arg
+    		infile = arg 
     	elif opt in ("-o", "--outfile"):
     		global outfile
-    		outfile = arg
+    		outfile = arg 
     	elif opt in ("-s", "--schema"):
     		global schema
     		schema = arg
+    	elif opt in ("-v", "--incrementalValue"):
+    		global incrementalValue
+    		incrementalValue = arg
+
     	
 if __name__ == "__main__":
     main(sys.argv[1:])		
@@ -53,7 +57,6 @@ clientFile = open(infile)
 clientProductFeed = open(outfile, 'w')
 generateDateTime = time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime())
 schemaVersion = 'http://www.bazaarvoice.com/xs/PRR/ProductFeed/' + schema
-incrementalValue = 'false'
 
 #build necessary header
 root = Element('Feed')
@@ -83,9 +86,9 @@ for line in clientFile:
 	manufactureNums = vals[7]
 	brand = vals[8]
 	locale  = vals[9]
-	#ISBN = vals[10]
-	#EAN = vals[11]
-	#UPC = vals[12]
+	ISBN = vals[10]
+	EAN = vals[11]
+	UPC = vals[12]
 
 
 	if recordType == 'Product':
@@ -111,11 +114,11 @@ for line in clientFile:
 		if categoryId != externalId:
 			parentCatNode = SubElement(category, 'ParentExternalId')
 			parentCatNode.text = categoryId
-	#elif recordType == 'brand':
-	#	brand = SubElement(brands, 'Brand')
-	#	externalIDNode = SubElement(brand, 'ExternalId')
-	#	externalIDNode.text = externalId
-	#	nameNode = SubElement(brand, 'Name')
-	#	nameNode.text = recordName
+	elif recordType == 'brand':
+		brand = SubElement(brands, 'Brand')
+		externalIDNode = SubElement(brand, 'ExternalId')
+		externalIDNode.text = externalId
+		nameNode = SubElement(brand, 'Name')
+		nameNode.text = recordName
 		
 clientProductFeed.write(parseString(tostring(root)).toprettyxml())
