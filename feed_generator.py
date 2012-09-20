@@ -69,6 +69,7 @@ root.set('extractDate', generateDateTime)
 
 #products = SubElement(root, 'Products')
 
+uniqueId = 99999
 
 for line in clientFile:
 	vals = line.split('	')
@@ -95,17 +96,21 @@ for line in clientFile:
 	externalIDNode = SubElement(product, 'ExternalId')
 	externalIDNode.text = externalId
 	numQuestionsNode = SubElement(product, 'NumQuestions')
-	numQuestionsNode.text = '4'
+	numQuestionsNode.text = str(qCount)
 	numAnswersNode = SubElement(product, 'NumAnswers')
-	numAnswersNode.text = '4'
+	numAnswersNode.text = str(aCount)
 	questions = SubElement(product, 'Questions')
 
-	for i in (0, qCount):
+	for i in range(0, qCount):
 		#Question1
 		questionNode = SubElement(questions, 'Question')
+		questionNode.set('id', str(uniqueId))
+		uniqueId += 1
 		#question
 		questionSummary = SubElement(questionNode, 'QuestionSummary')
-		questionSummary.text = question1
+		questionSummary.text = vals[qPos]
+		questionDetails = SubElement(questionNode, 'QuestionDetails')
+		questionDetails.text = vals[qPos]
 		#asker profile information
 		userNicknameNode = SubElement(questionNode, 'UserNickname')
 		userNicknameNode.text = "Customer Help"	
@@ -114,14 +119,16 @@ for line in clientFile:
 		profileExternalID = SubElement(questionUserProfileNode, 'ExternalId')
 		profileExternalID.text = "storagecom"
 		anonymous = SubElement(questionUserProfileNode, 'Anonymous')
-		anonymous.text = "true"
+		anonymous.text = "false"
 		hyperlinkingNode = SubElement(questionUserProfileNode, 'HyperlinkingEnabled')
 		hyperlinkingNode.text = "false"
 		#answer 
 		allAnswersNode = SubElement(questionNode, "Answers")
 		answerNode = SubElement(allAnswersNode, "Answer")
+		answerNode.set('id', str(uniqueId))
+		uniqueId += 1
 		answerSummary = SubElement(answerNode, "AnswerText")
-		answerSummary.text = answer1
+		answerSummary.text = vals[aPos]
 		answerUserNicknameNode = SubElement(answerNode, 'UserNickname')
 		answerUserNicknameNode.text = "Customer Help"	
 		answerUserProfileNode = SubElement(answerNode, 'UserProfileReference')
@@ -135,4 +142,4 @@ for line in clientFile:
 		aPos += 2
 		
 clientProductFeed.write(tostring(root))
-print tostring(root)
+#print tostring(root)
