@@ -93,6 +93,7 @@ for line in clientFile:
 	numAnswersNode = SubElement(product, 'NumAnswers')
 	numAnswersNode.text = '4'
 	questions = SubElement(product, 'Questions')
+	#Question1
 	question1Node = SubElement(questions, 'Question')
 	#asker profile information
 	questionUserProfileNode = SubElement(question1Node, 'UserProfileReference')
@@ -102,15 +103,93 @@ for line in clientFile:
 	anonymous.text = "true"
 	hyperlinkingNode = SubElement(questionUserProfileNode, 'HyperlinkingEnabled')
 	hyperlinkingNode.text = "false"
-	#questions
+	#questions 1
 	question1Summary = SubElement(question1Node, 'QuestionSummary')
 	question1Summary.text = question1
-	#answers
+	#answer 1
 	allAnswers1Node = SubElement(question1Node, "Answers")
 	answer1Node = SubElement(allAnswers1Node, "Answer")
 	answer1Summary = SubElement(answer1Node, "AnswerText")
 	answer1Summary.text = answer1
 	answerUserProfileNode = SubElement(answer1Node, 'UserProfileReference')
+	profileExternalID = SubElement(answerUserProfileNode, 'ExternalId')
+	profileExternalID.text = "xyz322"
+	hyperlinkingNode = SubElement(answerUserProfileNode, 'HyperlinkingEnabled')
+	hyperlinkingNode.text = "false"
+	anonymous = SubElement(answerUserProfileNode, 'Anonymous')
+	anonymous.text = "false"
+
+		#Question2
+	question2Node = SubElement(questions, 'Question')
+	#asker profile information
+	questionUserProfileNode = SubElement(question2Node, 'UserProfileReference')
+	profileExternalID = SubElement(questionUserProfileNode, 'ExternalId')
+	profileExternalID.text = "22345"
+	anonymous = SubElement(questionUserProfileNode, 'Anonymous')
+	anonymous.text = "true"
+	hyperlinkingNode = SubElement(questionUserProfileNode, 'HyperlinkingEnabled')
+	hyperlinkingNode.text = "false"
+	#questions 2
+	question2Summary = SubElement(question2Node, 'QuestionSummary')
+	question2Summary.text = question2
+	#answer 2
+	allAnswers2Node = SubElement(question2Node, "Answers")
+	answer2Node = SubElement(allAnswers2Node, "Answer")
+	answer2Summary = SubElement(answer2Node, "AnswerText")
+	answer2Summary.text = answer2
+	answerUserProfileNode = SubElement(answer2Node, 'UserProfileReference')
+	profileExternalID = SubElement(answerUserProfileNode, 'ExternalId')
+	profileExternalID.text = "xyz322"
+	hyperlinkingNode = SubElement(answerUserProfileNode, 'HyperlinkingEnabled')
+	hyperlinkingNode.text = "false"
+	anonymous = SubElement(answerUserProfileNode, 'Anonymous')
+	anonymous.text = "false"
+
+		#Question1
+	question3Node = SubElement(questions, 'Question')
+	#asker profile information
+	questionUserProfileNode = SubElement(question3Node, 'UserProfileReference')
+	profileExternalID = SubElement(questionUserProfileNode, 'ExternalId')
+	profileExternalID.text = "33345"
+	anonymous = SubElement(questionUserProfileNode, 'Anonymous')
+	anonymous.text = "true"
+	hyperlinkingNode = SubElement(questionUserProfileNode, 'HyperlinkingEnabled')
+	hyperlinkingNode.text = "false"
+	#questions 3
+	question3Summary = SubElement(question3Node, 'QuestionSummary')
+	question3Summary.text = question3
+	#answer 3
+	allAnswers3Node = SubElement(question3Node, "Answers")
+	answer3Node = SubElement(allAnswers3Node, "Answer")
+	answer3Summary = SubElement(answer3Node, "AnswerText")
+	answer3Summary.text = answer3
+	answerUserProfileNode = SubElement(answer3Node, 'UserProfileReference')
+	profileExternalID = SubElement(answerUserProfileNode, 'ExternalId')
+	profileExternalID.text = "xyz333"
+	hyperlinkingNode = SubElement(answerUserProfileNode, 'HyperlinkingEnabled')
+	hyperlinkingNode.text = "false"
+	anonymous = SubElement(answerUserProfileNode, 'Anonymous')
+	anonymous.text = "false"
+
+		#Question4
+	question4Node = SubElement(questions, 'Question')
+	#asker profile information
+	questionUserProfileNode = SubElement(question4Node, 'UserProfileReference')
+	profileExternalID = SubElement(questionUserProfileNode, 'ExternalId')
+	profileExternalID.text = "42345"
+	anonymous = SubElement(questionUserProfileNode, 'Anonymous')
+	anonymous.text = "true"
+	hyperlinkingNode = SubElement(questionUserProfileNode, 'HyperlinkingEnabled')
+	hyperlinkingNode.text = "false"
+	#questions 4
+	question4Summary = SubElement(question4Node, 'QuestionSummary')
+	question4Summary.text = question4
+	#answer 4
+	allAnswers4Node = SubElement(question4Node, "Answers")
+	answer4Node = SubElement(allAnswers4Node, "Answer")
+	answer4Summary = SubElement(answer4Node, "AnswerText")
+	answer4Summary.text = answer4
+	answerUserProfileNode = SubElement(answer4Node, 'UserProfileReference')
 	profileExternalID = SubElement(answerUserProfileNode, 'ExternalId')
 	profileExternalID.text = "xyz322"
 	hyperlinkingNode = SubElement(answerUserProfileNode, 'HyperlinkingEnabled')
