@@ -95,9 +95,9 @@ for line in clientFile:
 	externalIDNode = SubElement(product, 'ExternalId')
 	externalIDNode.text = externalId
 	numQuestionsNode = SubElement(product, 'NumQuestions')
-	numQuestionsNode.text = qCount
+	numQuestionsNode.text = '4'
 	numAnswersNode = SubElement(product, 'NumAnswers')
-	numAnswersNode.text = aCount
+	numAnswersNode.text = '4'
 	questions = SubElement(product, 'Questions')
 
 	for i in (0, qCount):
@@ -117,7 +117,6 @@ for line in clientFile:
 		anonymous.text = "true"
 		hyperlinkingNode = SubElement(questionUserProfileNode, 'HyperlinkingEnabled')
 		hyperlinkingNode.text = "false"
-		
 		#answer 
 		allAnswersNode = SubElement(questionNode, "Answers")
 		answerNode = SubElement(allAnswersNode, "Answer")
@@ -125,8 +124,6 @@ for line in clientFile:
 		answerSummary.text = answer1
 		answerUserNicknameNode = SubElement(answerNode, 'UserNickname')
 		answerUserNicknameNode.text = "Customer Help"	
-		
-
 		answerUserProfileNode = SubElement(answerNode, 'UserProfileReference')
 		profileExternalID = SubElement(answerUserProfileNode, 'ExternalId')
 		profileExternalID.text = "storagecom"
@@ -134,10 +131,8 @@ for line in clientFile:
 		hyperlinkingNode.text = "false"
 		anonymous = SubElement(answerUserProfileNode, 'Anonymous')
 		anonymous.text = "false"
-
 		qPos += 2
 		aPos += 2
-
 		
-#clientProductFeed.write(tostring(root))
+clientProductFeed.write(tostring(root))
 print tostring(root)
