@@ -60,15 +60,14 @@ schemaVersion = 'http://www.bazaarvoice.com/xs/PRR/StandardClientFeed/' + schema
 
 #build necessary header
 root = Element('Feed')
-root.set('incremental', incrementalValue)
+#root.set('incremental', incrementalValue)
 root.set('name', clientName)
 root.set('xmlns', schemaVersion)
 root.set('extractDate', generateDateTime)
 
 # 
-brands = SubElement(root, 'Brands')
-categories = SubElement(root, 'Categories')
-products = SubElement(root, 'Products')
+
+#products = SubElement(root, 'Products')
 
 
 for line in clientFile:
@@ -80,41 +79,44 @@ for line in clientFile:
 	answer2 = vals[4]
 	question3 = vals[5]
 	answer3 = vals[6]
+	question4 = vals[7]
+	answer4 = vals[8]
 
 	# pipe delimited values
-	manufactureNums = vals[7]
-	brand = vals[8]
 
+	product = SubElement(root, 'Product')
+	product.set('id', externalId)
+	externalIDNode = SubElement(product, 'ExternalId')
+	externalIDNode.text = externalId
+	numQuestionsNode = SubElement(product, 'NumQuestions')
+	numQuestionsNode.text = '4'
+	numAnswersNode = SubElement(product, 'NumAnswers')
+	numAnswersNode.text = '4'
+	questions = SubElement(product, 'Questions')
+	question1Node = SubElement(questions, 'Question')
+	#asker profile information
+	questionUserProfileNode = SubElement(question1Node, 'UserProfileReference')
+	profileExternalID = SubElement(questionUserProfileNode, 'ExternalId')
+	profileExternalID.text = "12345"
+	anonymous = SubElement(questionUserProfileNode, 'Anonymous')
+	anonymous.text = "true"
+	hyperlinkingNode = SubElement(questionUserProfileNode, 'HyperlinkingEnabled')
+	hyperlinkingNode.text = "false"
+	#questions
+	question1Summary = SubElement(question1Node, 'QuestionSummary')
+	question1Summary.text = question1
+	#answers
+	allAnswers1Node = SubElement(question1Node, "Answers")
+	answer1Node = SubElement(allAnswers1Node, "Answer")
+	answer1Summary = SubElement(answer1Node, "AnswerText")
+	answer1Summary.text = answer1
+	answerUserProfileNode = SubElement(answer1Node, 'UserProfileReference')
+	profileExternalID = SubElement(answerUserProfileNode, 'ExternalId')
+	profileExternalID.text = "xyz322"
+	hyperlinkingNode = SubElement(answerUserProfileNode, 'HyperlinkingEnabled')
+	hyperlinkingNode.text = "false"
+	anonymous = SubElement(answerUserProfileNode, 'Anonymous')
+	anonymous.text = "false"
 
-
-	if recordType == 'Product':
-		product = SubElement(products, 'Product')
-		externalIDNode = SubElement(product, 'ExternalId')
-		externalIDNode.text = externalId
-		nameNode = SubElement(product, 'Name')
-		nameNode.text = recordName
-		descNode = SubElement(product, 'Description')
-		descNode.text = productDesc
-		pdpURLNode = SubElement(product, 'ProductPageUrl')
-		pdpURLNode.text = productUrl
-		imageNode = SubElement(product, 'ImageUrl')
-		imageNode.text = imageUrl
-	elif recordType == 'category':
-		category = SubElement(categories, 'Category')
-		externalIDNode = SubElement(category, 'ExternalId')
-		externalIDNode.text = externalId
-		nameNode = SubElement(category, 'Name')
-		nameNode.text = recordName
-		pdpURLNode = SubElement(category, 'CategoryPageUrl')
-		pdpURLNode.text = productUrl
-		if categoryId != externalId:
-			parentCatNode = SubElement(category, 'ParentExternalId')
-			parentCatNode.text = categoryId
-	elif recordType == 'brand':
-		brand = SubElement(brands, 'Brand')
-		externalIDNode = SubElement(brand, 'ExternalId')
-		externalIDNode.text = externalId
-		nameNode = SubElement(brand, 'Name')
-		nameNode.text = recordName
 		
-clientProductFeed.write(parseString(tostring(root)).toprettyxml())
+clientProductFeed.write(tostring(root))
