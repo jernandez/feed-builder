@@ -65,8 +65,6 @@ root.set('name', clientName)
 root.set('xmlns', schemaVersion)
 root.set('extractDate', generateDateTime)
 
-# 
-
 #products = SubElement(root, 'Products')
 
 uniqueId = 99999
