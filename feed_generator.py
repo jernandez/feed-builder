@@ -45,7 +45,7 @@ def generateFeed(options):
 	products = SubElement(root, 'Products')
 
 	# Loop through input
-	reader.next() # This starts the iteration at row two, thereby ignoring the first row with titles
+	reader.next() # This starts the iteration at row two, thereby, ignoring the first row with titles
 	for line in reader:
 		productName = line[0]
 		productId = line[1]
@@ -57,6 +57,7 @@ def generateFeed(options):
 		brandName = line[7]
 		brandId = line[8]
 
+		# Define individual top-level elements
 		product = SubElement(products, 'Product')
 		category = SubElement(categories, 'Category')
 		brand = SubElement(brands, 'Brand')
@@ -73,18 +74,20 @@ def generateFeed(options):
 			populateTags(modelNumbers, 'ModelNumber', line[11])
 
 		# Product families
-		# if checkForExistence(line, 12, 'Product families information is missing'):
-		if line[12] != '':
-			attrs = SubElement(product, 'Attributes')
-			familyAttr = SubElement(attrs, 'Attribute')
-			familyAttr.set('id', 'BV_FE_FAMILY')
-			familyValue = SubElement(familyAttr, 'Value')
-			familyValue.text = line[12]
-			if line[13] != '':
-				expandAttr = SubElement(attrs, 'Attribute')
-				expandAttr.set('id', 'BV_FE_EXPAND')
-				expandValue = SubElement(expandAttr, 'Value')
-				expandValue.text = 'BV_FE_FAMILY:' + line[12]
+		if checkForExistence(line, 12, 'Product families information is missing'):
+			if line[12] != '':
+				attrs = SubElement(product, 'Attributes')
+				familyAttr = SubElement(attrs, 'Attribute')
+				familyAttr.set('id', 'BV_FE_FAMILY')
+				familyValue = SubElement(familyAttr, 'Value')
+				familyValue.text = line[12]
+				# Expand product families
+				if checkForExistence(line, 13, ''):
+					if line[13] != '':
+						expandAttr = SubElement(attrs, 'Attribute')
+						expandAttr.set('id', 'BV_FE_EXPAND')
+						expandValue = SubElement(expandAttr, 'Value')
+						expandValue.text = 'BV_FE_FAMILY:' + line[12]
 
 		# Define lists
 		productList = {
@@ -106,19 +109,6 @@ def generateFeed(options):
 			'Name': brandName, 
 			'ExternalId': brandId
 		}
-
-		# for key, value in productList.items():
-		# 	populateTags(product, key, value)
-
-		# for key, value in categoryList.items():
-		# 	populateTags(category, key, value)
-		
-		# for key, value in brandList.items():
-		# 	populateTags(brand, key, value)
-
-		######## Ignore the 3 statements above and just do it all at once instead (below).  
-		######## Unsure which method is more efficient/faster.  The second is probably 
-		######## more scalable and elegant. So, I'll roll with that shizz for now.
 
 		elementsMapToLists = {
 			product: productList,
@@ -151,3 +141,6 @@ def main(argv):
 
 if __name__ == "__main__":
     main(sys.argv[1:])	
+
+
+
