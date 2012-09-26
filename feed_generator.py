@@ -116,6 +116,8 @@ for line in clientFile:
 		questionUserProfileNode = SubElement(questionNode, 'UserProfileReference')
 		profileExternalID = SubElement(questionUserProfileNode, 'ExternalId')
 		profileExternalID.text = "storagecom"
+		questionLocationNode = SubElement(questionNode, 'UserLocation')
+		questionLocationNode.text = "storage.com"
 		anonymous = SubElement(questionUserProfileNode, 'Anonymous')
 		anonymous.text = "false"
 		hyperlinkingNode = SubElement(questionUserProfileNode, 'HyperlinkingEnabled')
@@ -132,6 +134,8 @@ for line in clientFile:
 		answerUserProfileNode = SubElement(answerNode, 'UserProfileReference')
 		profileExternalID = SubElement(answerUserProfileNode, 'ExternalId')
 		profileExternalID.text = "storagecom"
+		answerLocationNode = SubElement(answerNode, 'UserLocation')
+		answerLocationNode.text = "storage.com"
 		hyperlinkingNode = SubElement(answerUserProfileNode, 'HyperlinkingEnabled')
 		hyperlinkingNode.text = "false"
 		anonymous = SubElement(answerUserProfileNode, 'Anonymous')
