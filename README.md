@@ -20,5 +20,6 @@ Here are the list of files in this directory:
 Usage
 -----
 
-    > python feed_generator.py -c democlient -i feed-as-csv.csv -o feed-from-csv.xml -S 5.1
-    > python name_of_script.py -c clientName - i location_of_input_csv -o location_of_output_xml -m moderationStatus (optional; dafaults to 'SUBMITTED'. Options: 'APPROVED' or 'SUBMITTED') -s schemaVersion (optional; defaults to '5.1')
+    > python feed_generator.py -c democlient -i feed-as-csv.csv -o feed-from-csv.xml -s 5.1
+    > python feed_generator.py -c democlient -i feed-as-csv-with-additonal-info.csv -o feed-from-csv-with-additonal-info.xml -s 5.1
+    > python name_of_script.py -c clientName - i location_of_input_csv -o location_of_output_xml -s schemaVersion (optional; defaults to '5.1')
