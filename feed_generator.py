@@ -85,7 +85,7 @@ def generateFeed(options):
 			}
 		if checkForExistence(line, 9, 'Secondary product information is missing (Mfg. Part Number)'):
 			mfgPartNumbers = SubElement(product, 'ManufacturerPartNumbers')
-			for mfgPartNumber in line[9].split(':'):
+			for mfgPartNumber in line[9].split('|'):
 				populateTags(mfgPartNumbers, 'ManufacturerPartNumber', mfgPartNumber)
 		if checkForExistence(line, 10, 'Secondary product information is missing (UPC)'):
 			upcs = SubElement(product, 'UPCs')
