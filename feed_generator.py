@@ -1,5 +1,5 @@
 #! /usr/bin/env python
-import time, sys, csv, xml, re
+import time, sys, csv, xml, re, subprocess
 import logging
 from xml.etree.ElementTree import *
 from xml.dom.minidom import parseString
@@ -176,10 +176,15 @@ def generateFeed(options):
 		populateTags(category, 'ExternalId', category_dict[key]['ExternalId'])
 
 	# Format and pretty print XML
+	print 'Attempting to parse and write new feed'
 	root = parseString(tostring(root)).toprettyxml()
 	root = re.compile('>\n\s+([^<>\s].*?)\n\s+</', re.DOTALL).sub('>\g<1></', root)
 
+	print 'Validating feed:'
 	clientProductFeed.write(root)
+	clientProductFeed.close()
+	subprocess.call(['xmllint --schema ' + schemaVersion + ' --noout ' + options.output], shell=True)
+	
 	print errors
 
 ###################################################################
