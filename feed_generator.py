@@ -1,5 +1,6 @@
 #! /usr/bin/env python
 import time, sys, csv, xml, re
+import logging
 from xml.etree.ElementTree import *
 from xml.dom.minidom import parseString
 from optparse import OptionParser
@@ -7,30 +8,88 @@ from optparse import OptionParser
 ###################################################################
 # Nuts and bolts
 ###################################################################
+# Global error log
+errors = ''
+# Global dictionaries
+brand_dict = {}
+category_dict = {}
+
 def populateTags(parentTag, tagTitle, tagText):
-	node = SubElement(parentTag, tagTitle)
-	node.text = tagText
+	if not isinstance(tagText, str):
+		node = SubElement(parentTag, tagTitle+'s')
+		for item in tagText:
+			subNode = SubElement(node, tagTitle)
+			subNode.text = item
+	else:
+		node = SubElement(parentTag, tagTitle)
+		node.text = tagText
 
-def checkForExistence(line, num, errorMsg):
-	try: 
-		if line[num] == '':
-			print errorMsg
-			return False
-		return True			
-	except IndexError:
-		print errorMsg
-
-def checkXMLNode(line, attributeNode, errorMsg):
+def returnNode(line, value, options, xmlIndex=0):
+	global errors
 	try:
-		return line.getElementsByTagName(attributeNode)[0].firstChild.nodeValue
+		if options.feedtype == 'csv':
+			return line[value]
+		elif options.feedtype == 'xml':
+			return str(line.getElementsByTagName(value)[xmlIndex].firstChild.nodeValue)
 	except:
-		print errorMsg
+		errors += '\nMissing: ' + str(value) + ': Line ' + str(line)
 		return 0
 
-def getXMLValues(line, productMap):
-	return {key: checkXMLNode(line,value,(str(key)+' not found')) for key, value in productMap.items()}
+def returnNodeList(line, value, options):
+	global errors
+	try:
+		if options.feedtype == 'csv':
+			return [item for item in returnNode(line,value,options).split('|')]
+		elif options.feedtype == 'xml':
+			return [returnNode(line,value,options,idx) for idx,item in enumerate(line.getElementsByTagName(value))]
+	except:
+		return 0
+
+def checkNode(line, key, value, options, product_map):
+	global errors
+	global brand_dict
+	global category_dict
+	if key == 'BrandExternalId':
+		try:
+			brand_id = returnNode(line,product_map['BrandExternalId'],options)
+			brand_dict[brand_id] = {
+				'ExternalId': brand_id,
+				'Name': returnNode(line,product_map['Brand'],options)
+			}
+			return brand_id
+		except:
+			errors += 'exception: ' + str(key) + str(line)
+			return 0
+	elif key == 'CategoryExternalId':
+		try:
+			category_id = returnNode(line,value,options)
+			category_dict[category_id] = {
+				'ExternalId': category_id,
+				'Name': returnNode(line,product_map['CategoryName'],options)
+			}
+			return category_id
+		except:
+			errors += 'exception: ' + str(key) + str(line) + '\n'
+			return 0
+	elif key in ['Attribute', 'ModelNumber', 'ManufacturerPartNumber', 'EAN', 'UPC', 'ISBN']: # enumerates plural field types
+		try:
+			nodelist = returnNodeList(line,value,options)
+			return nodelist
+		except:
+			errors += 'exception: ' + str(key) + str(value) + '\n'
+			return 0
+	elif key in ['Brand', 'CategoryName']: # Skip if one of these nodes is handled separately
+		return 0
+	else:
+		return returnNode(line,value,options)
+
+def getNode(line, productMap, options, global_map):
+	return {key: checkNode(line, key, value, options, global_map,) for key, value in productMap.items()}
 
 def generateFeed(options):
+	global errors
+	global brand_dict
+	global category_dict
 	# Access files
 	clientFile = open(options.input) if options.feedtype == 'csv' else xml.dom.minidom.parse(options.input)
 	clientProductFeed = open(options.output, 'w')
@@ -62,9 +121,6 @@ def generateFeed(options):
 	reader.next() if options.feedtype == 'csv' else xml.dom.minidom.parse(options.input)
 
 	# utility
-	product_ids = {}
-	brand_dict = {}
-	category_dict = {}
 	product_Map = {}
 	if options.feedtype == 'csv':
 		product_Map = {
@@ -73,9 +129,12 @@ def generateFeed(options):
 		'ProductPageUrl': 3,
 		'Description': 2,
 		'ImageUrl': 4,
-		'CategoryExternalId': 6
+		'CategoryExternalId': 6,
+		'CategoryName': 7,
+		'Brand': 8,
+		'BrandExternalId': 9
 		}
-	elif options.feedtype == 'xml':
+	if options.feedtype == 'xml':
 		product_Map = {
 		'Name': 'SHORT_DESCRIPTION',
 		'ExternalId': 'BASE_MODEL_NUMBER',
@@ -90,113 +149,22 @@ def generateFeed(options):
 		'UPC': 'UPC',
 		'ModelNumber': 'MODEL_NUMBER'
 		}
-	primary_product_fields = [
-		'Name',
-		'ExternalId',
-		'ProductPageUrl',
-		'Description',
-		'ImageUrl',
-		'CategoryExternalId']
-
 
 	for line in reader:
-		productList = {key: value for key, value in product_Map.items() if key in primary_product_fields}
-		if options.feedtype == 'csv':
-			productList = {key: line[value] for key, value in productList.items()}
-		elif options.feedtype == 'xml':
-			productList = {key: value for key, value in getXMLValues(line,productList).items() if value > 0}
-
-		# Define individual top-level elements
-		product = SubElement(products, 'Product')
-
-		# Secondary product information (mfg. part no, UPC, model no., etc.)
-		if options.feedtype == 'csv':
-			if checkForExistence(line, 7, 'Brand information is missing'):
-				brand_dict[line[8]] = {
-					'ExternalId': line[8],
-					'Name': line[7]
-				}
-				populateTags(product, 'BrandExternalId', line[8])
-			if checkForExistence(line, 5, 'Category information is missing'):
-				category_dict[line[6]] = {
-					'ExternalId': line[6],
-					'Name': line[5]
-				}
-			if checkForExistence(line, 9, 'Secondary product information is missing (Mfg. Part Number)'):
-				mfgPartNumbers = SubElement(product, 'ManufacturerPartNumbers')
-				for mfgPartNumber in line[9].split('|'):
-					populateTags(mfgPartNumbers, 'ManufacturerPartNumber', mfgPartNumber)
-			if checkForExistence(line, 10, 'Secondary product information is missing (UPC)'):
-				upcs = SubElement(product, 'UPCs')
-				populateTags(upcs, 'UPC', line[10])
-			if checkForExistence(line, 11, 'Secondary product information is missing (Model Number)'):
-				modelNumbers = SubElement(product, 'ModelNumbers')
-				for modelNumber in line[11].split(':'):
-					populateTags(modelNumbers, 'ModelNumber', modelNumber)
-			# Product families
-			if checkForExistence(line, 12, 'Product families information is missing'):
-				attrs = SubElement(product, 'Attributes')
-				familyAttr = SubElement(attrs, 'Attribute')
-				familyAttr.set('id', 'BV_FE_FAMILY')
-				familyValue = SubElement(familyAttr, 'Value')
-				familyValue.text = line[12]
-				# Expand product families
-				if checkForExistence(line, 13, ''):
-					if line[13] != '':
-						expandAttr = SubElement(attrs, 'Attribute')
-						expandAttr.set('id', 'BV_FE_EXPAND')
-						expandValue = SubElement(expandAttr, 'Value')
-						expandValue.text = 'BV_FE_FAMILY:' + line[12]
-		elif options.feedtype == 'xml':
-			# Brand nodes
-			brandName = checkXMLNode(line, product_Map['Brand'], 'Brand ID is missing') if 'Brand' in product_Map.keys() else 0
-			brandId = checkXMLNode(line, product_Map['BrandExternalId'], 'Brand name is missing') if 'BrandExternalId' in product_Map.keys() else 0
-			if brandId and brandName:
-				brand_dict[brandId] = {
-					'ExternalId': brandId,
-					'Name': brandName
-				}
-				populateTags(product, 'BrandExternalId', brandId)
-			# Category nodes
-			categoryName = checkXMLNode(line, product_Map['CategoryName'], 'Category ID is missing') if 'CategoryName' in product_Map.keys() else 0
-			categoryId = checkXMLNode(line, product_Map['CategoryExternalId'], 'Category name is missing') if 'CategoryExternalId' in product_Map.keys() else 0
-			if categoryId and categoryName:
-				category_dict[categoryId] = {
-					'ExternalId': categoryId,
-					'Name': categoryName
-				}
-			# Manufacturer Part Numbers
-			mfgPartNumber = checkXMLNode(line, product_Map['ManufacturerPartNumber'], 'ManufacturerPartNumber is missing') if 'ManufacturerPartNumber' in product_Map.keys() else 0
-			if mfgPartNumber:
-				mfgPartNumbers = SubElement(product, 'ManufacturerPartNumbers')
-				populateTags(mfgPartNumbers, 'ManufacturerPartNumber', mfgPartNumber)
-			# UPCs  TODO: if less than 6, add 0's until it's 6.  if less than 12 and greater than 6, add 0's until it's 12.
-			upc = checkXMLNode(line, product_Map['UPC'], 'UPC is missing') if 'UPC' in product_Map.keys() else 0
-			if upc:
-				upcs = SubElement(product, 'UPCs')
-				populateTags(upcs, 'UPC', upc)
-			# Model Numbers
-			modelNumber = checkXMLNode(line, product_Map['ModelNumber'], 'Model number is missing') if 'ModelNumber' in product_Map.keys() else 0
-			if modelNumber:
-				modelNumbers = SubElement(product, 'ModelNumbers')
-				populateTags(modelNumbers, 'ModelNumber', modelNumber)
-			# Product families
-			family = checkXMLNode(line, product_Map['BV_FE_FAMILY'], 'Family is missing') if 'BV_FE_FAMILY' in product_Map.keys() else 0
-			if family:
-				attrs = SubElement(product, 'Attributes')
-				familyAttr = SubElement(attrs, 'Attribute')
-				familyAttr.set('id', 'BV_FE_FAMILY')
-				familyValue = SubElement(familyAttr, 'Value')
-				familyValue.text = family
-
-		elementsMapToLists = {
-			product: productList,
-		}
-
-		for key, value in elementsMapToLists.items():
-			for k, v in value.items():
-				populateTags(key, k, v)
+		productList = {key: value for key, value in product_Map.items()} # copy map for given product
+		productList = {key: value for key, value in getNode(line,productList,options,product_Map).items() if value > 0} # get mapped values for product
 		
+		product = SubElement(products, 'Product') # Define individual top-level elements
+		elementsMapToLists = { # add product to element map, duplicate checking should happen here
+				product: productList,
+			}
+
+		for key, value in elementsMapToLists.items(): # write new product, brand, and category nodes here
+			for k, v in value.items():
+				populateTags(key, k, v) # populate flat tags in product
+				# todo: populate nested tags in product
+
+	# populate brand and category nodes
 	for key in brand_dict:
 		brand = SubElement(brands, 'Brand')
 		populateTags(brand, 'Name', brand_dict[key]['Name'])
@@ -212,6 +180,7 @@ def generateFeed(options):
 	root = re.compile('>\n\s+([^<>\s].*?)\n\s+</', re.DOTALL).sub('>\g<1></', root)
 
 	clientProductFeed.write(root)
+	print errors
 
 ###################################################################
 # Handle command line args
