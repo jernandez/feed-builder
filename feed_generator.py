@@ -162,7 +162,6 @@ def generateFeed(options):
 		for key, value in elementsMapToLists.items(): # write new product, brand, and category nodes here
 			for k, v in value.items():
 				populateTags(key, k, v) # populate flat tags in product
-				# todo: populate nested tags in product
 
 	# populate brand and category nodes
 	for key in brand_dict:
@@ -184,7 +183,7 @@ def generateFeed(options):
 	clientProductFeed.write(root)
 	clientProductFeed.close()
 	subprocess.call(['xmllint --schema ' + schemaVersion + ' --noout ' + options.output], shell=True)
-	
+
 	print errors
 
 ###################################################################
