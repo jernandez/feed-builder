@@ -1,5 +1,6 @@
 #! /usr/bin/env python
 import time, sys, csv, xml, re
+import logging
 from xml.etree.ElementTree import *
 from xml.dom.minidom import parseString
 from optparse import OptionParser
@@ -11,15 +12,30 @@ def populateTags(parentTag, tagTitle, tagText):
 	node = SubElement(parentTag, tagTitle)
 	node.text = tagText
 
-def checkForExistence(line, num, errorMsg):
-	try: 
-		if line[num] == '':
-			print errorMsg
-			return False
-		return True			
+def checkForExistence(parentTag, indKey, keyDesc, errorMsg):
+	try:
+		for item in indKey[keyDesc].split('|'):
+			node = SubElement(parentTag, keyDesc)
+			node.text = item
+			if item == '':
+				logging.error(errorMsg)
+				print indKey
 	except IndexError:
-		print errorMsg
-
+		print 'Index Error'
+def checkForExistenceMinor(rootParent, indKey, keyDesc, errorMsg):
+	try:
+		if indKey[keyDesc] != '':
+			keyName = keyDesc+'s'
+			productChild = SubElement(rootParent, keyName)
+			for item in indKey[keyDesc].split('|'):
+				node = SubElement(productChild, keyDesc)
+				node.text = item
+			if keyDesc == 'UPC':
+				if len(item) != 12:
+					logging.error('A UPC must be 12 characters in length')
+					print item
+	except IndexError:
+		print 'Index Error'
 def checkXMLNode(line, attributeNode, errorMsg):
 	try:
 		return line.getElementsByTagName(attributeNode)[0].firstChild.nodeValue
@@ -63,19 +79,21 @@ def generateFeed(options):
 
 	# utility
 	product_ids = {}
+	product_dict = {}
 	brand_dict = {}
 	category_dict = {}
 	product_Map = {}
-	if options.feedtype == 'csv':
-		product_Map = {
-		'Name': 0,
-		'ExternalId': 1,
-		'ProductPageUrl': 3,
-		'Description': 2,
-		'ImageUrl': 4,
-		'CategoryExternalId': 6
-		}
-	elif options.feedtype == 'xml':
+	# if options.feedtype == 'csv':
+	# 	product_Map = {
+	# 	'Name': 0,
+	# 	'ExternalId': 1,
+	# 	'ProductPageUrl': 3,
+	# 	'Description': 2,
+	# 	'ImageUrl': 4,
+	# 	'CategoryExternalId': 6,
+	# 	}
+
+	if options.feedtype == 'xml':
 		product_Map = {
 		'Name': 'SHORT_DESCRIPTION',
 		'ExternalId': 'BASE_MODEL_NUMBER',
@@ -100,10 +118,8 @@ def generateFeed(options):
 
 
 	for line in reader:
-		productList = {key: value for key, value in product_Map.items() if key in primary_product_fields}
-		if options.feedtype == 'csv':
-			productList = {key: line[value] for key, value in productList.items()}
-		elif options.feedtype == 'xml':
+		# productList = {key: value for key, value in product_Map.items() if key in primary_product_fields}
+		if options.feedtype == 'xml':
 			productList = {key: value for key, value in getXMLValues(line,productList).items() if value > 0}
 
 		# Define individual top-level elements
@@ -111,42 +127,34 @@ def generateFeed(options):
 
 		# Secondary product information (mfg. part no, UPC, model no., etc.)
 		if options.feedtype == 'csv':
-			if checkForExistence(line, 7, 'Brand information is missing'):
-				brand_dict[line[8]] = {
-					'ExternalId': line[8],
-					'Name': line[7]
-				}
-				populateTags(product, 'BrandExternalId', line[8])
-			if checkForExistence(line, 5, 'Category information is missing'):
-				category_dict[line[6]] = {
-					'ExternalId': line[6],
-					'Name': line[5]
-				}
-			if checkForExistence(line, 9, 'Secondary product information is missing (Mfg. Part Number)'):
-				mfgPartNumbers = SubElement(product, 'ManufacturerPartNumbers')
-				for mfgPartNumber in line[9].split('|'):
-					populateTags(mfgPartNumbers, 'ManufacturerPartNumber', mfgPartNumber)
-			if checkForExistence(line, 10, 'Secondary product information is missing (UPC)'):
-				upcs = SubElement(product, 'UPCs')
-				populateTags(upcs, 'UPC', line[10])
-			if checkForExistence(line, 11, 'Secondary product information is missing (Model Number)'):
-				modelNumbers = SubElement(product, 'ModelNumbers')
-				for modelNumber in line[11].split(':'):
-					populateTags(modelNumbers, 'ModelNumber', modelNumber)
-			# Product families
-			if checkForExistence(line, 12, 'Product families information is missing'):
-				attrs = SubElement(product, 'Attributes')
-				familyAttr = SubElement(attrs, 'Attribute')
-				familyAttr.set('id', 'BV_FE_FAMILY')
-				familyValue = SubElement(familyAttr, 'Value')
-				familyValue.text = line[12]
-				# Expand product families
-				if checkForExistence(line, 13, ''):
-					if line[13] != '':
-						expandAttr = SubElement(attrs, 'Attribute')
-						expandAttr.set('id', 'BV_FE_EXPAND')
-						expandValue = SubElement(expandAttr, 'Value')
-						expandValue.text = 'BV_FE_FAMILY:' + line[12]
+			if product_ids.get(line[1], False):
+				logging.error('Duplicate product id: This product has been omitted from the feed.')
+				print line
+				continue
+			product_ids[line[1]] = True
+
+			product_dict[line[1]] = {
+				'ExternalId': line[1],
+				'Name': line[0],
+				'Description': line[2],
+				'CategoryExternalId': line[6],
+				'ProductPageUrl': line[3],
+				'ImageUrl': line[4],
+				'BrandExternalId': line[7],
+				'ManufacturerPartNumber': line[9],
+				'UPC': line[10],
+				'ModelNumber': line[11]
+				# 'EAN': line[12]
+			}
+			brand_dict[line[8]]= {
+				'ExternalId': line[8],
+				'Name': line[7]
+			}
+			category_dict[line[6]]={
+				'ExternalId': line[6],
+			 	'Name': line[5]
+			}
+
 		elif options.feedtype == 'xml':
 			# Brand nodes
 			brandName = checkXMLNode(line, product_Map['Brand'], 'Brand ID is missing') if 'Brand' in product_Map.keys() else 0
@@ -189,23 +197,50 @@ def generateFeed(options):
 				familyValue = SubElement(familyAttr, 'Value')
 				familyValue.text = family
 
-		elementsMapToLists = {
-			product: productList,
-		}
+			elementsMapToLists = {
+				product: productList,
+			}
 
-		for key, value in elementsMapToLists.items():
-			for k, v in value.items():
-				populateTags(key, k, v)
-		
+			for key, value in elementsMapToLists.items():
+				for k, v in value.items():
+					populateTags(key, k, v)
+	if options.feedtype == 'xml':	
+		for key in brand_dict:
+			brand = SubElement(brands, 'Brand')
+			populateTags(brand, 'Name', brand_dict[key]['Name'])
+			populateTags(brand, 'ExternalId', brand_dict[key]['ExternalId'])
+
+		for key in category_dict:
+			category = SubElement(categories, 'Category')
+			populateTags(category, 'Name', category_dict[key]['Name'])
+			populateTags(category, 'ExternalId', category_dict[key]['ExternalId'])
+
+
 	for key in brand_dict:
 		brand = SubElement(brands, 'Brand')
-		populateTags(brand, 'Name', brand_dict[key]['Name'])
-		populateTags(brand, 'ExternalId', brand_dict[key]['ExternalId'])
+		brandKey = brand_dict[key]
+		checkForExistenceMinor(brand, brandKey, 'Name', 'Brand name is missing for')
+		checkForExistenceMinor(brand, brandKey, 'ExternalId', 'Brand external id is missing for')
 
 	for key in category_dict:
 		category = SubElement(categories, 'Category')
-		populateTags(category, 'Name', category_dict[key]['Name'])
-		populateTags(category, 'ExternalId', category_dict[key]['ExternalId'])
+		catKey = category_dict[key]
+		checkForExistence(category, catKey, 'Name', 'Category name is missing for')
+		checkForExistence(category, catKey, 'ExternalId', 'Category external id is missing for ')
+	
+	for key in product_dict:
+		product = SubElement(products, 'Product')
+		prodKey = product_dict[key]
+		checkForExistence(product, prodKey, 'ExternalId', 'Product External ID is missing for')
+		checkForExistence(product, prodKey, 'Name', 'Product Name is missing for ')
+		checkForExistenceMinor(product, prodKey, 'Description', 'Product Description is missing for ')
+		checkForExistence(product, prodKey, 'CategoryExternalId', 'Category External Id is missing for ')
+		checkForExistence(product, prodKey, 'ProductPageUrl', 'Product page URL is missing for ')
+		checkForExistence(product, prodKey, 'ImageUrl', 'Image URL is missing for ')
+		checkForExistence(product, prodKey, 'BrandExternalId', 'Brand external Id is missing for ')
+		checkForExistenceMinor(product, prodKey, 'ManufacturerPartNumber', 'Manufacturer Part Number is missing for ')
+		checkForExistenceMinor(product, prodKey, 'UPC', 'UPC is missing for ')
+		checkForExistenceMinor(product, prodKey, 'ModelNumber', 'Model Number is missing for')
 
 	# Format and pretty print XML
 	root = parseString(tostring(root)).toprettyxml()
