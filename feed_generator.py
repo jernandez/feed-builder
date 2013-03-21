@@ -15,7 +15,7 @@ brand_dict = {}
 category_dict = {}
 
 def populateTags(parentTag, tagTitle, tagText):
-	if not isinstance(tagText, str):
+	if isinstance(tagText, list):
 		node = SubElement(parentTag, tagTitle+'s')
 		for item in tagText:
 			subNode = SubElement(node, tagTitle)
