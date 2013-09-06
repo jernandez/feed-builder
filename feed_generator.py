@@ -13,6 +13,7 @@ errors = ''
 # Global dictionaries
 brand_dict = {}
 category_dict = {}
+product_dict = {}
 
 def populateTags(parentTag, tagTitle, tagText):
 	if isinstance(tagText, list):
@@ -90,6 +91,8 @@ def generateFeed(options):
 	global errors
 	global brand_dict
 	global category_dict
+	global product_dict
+
 	# Access files
 	clientFile = open(options.input) if options.feedtype == 'csv' else xml.dom.minidom.parse(options.input)
 	clientProductFeed = open(options.output, 'w')
@@ -126,13 +129,14 @@ def generateFeed(options):
 		product_Map = {
 		'Name': 0,
 		'ExternalId': 1,
-		'ProductPageUrl': 3,
-		'Description': 2,
+		'ProductPageUrl': 2,
+		'Description': 3,
 		'ImageUrl': 4,
-		'CategoryExternalId': 6,
-		'CategoryName': 7,
-		'Brand': 8,
-		'BrandExternalId': 9
+		'CategoryExternalId': 5,
+		'CategoryName': 6,
+		'Brand': 7,
+		'BrandExternalId': 8,
+		#'locale' : 9
 		}
 	if options.feedtype == 'xml':
 		product_Map = {
@@ -154,14 +158,25 @@ def generateFeed(options):
 		productList = {key: value for key, value in product_Map.items()} # copy map for given product
 		productList = {key: value for key, value in getNode(line,productList,options,product_Map).items() if value > 0} # get mapped values for product
 		
-		product = SubElement(products, 'Product') # Define individual top-level elements
-		elementsMapToLists = { # add product to element map, duplicate checking should happen here
-				product: productList,
-			}
+		# product = SubElement(products, 'Product') # Define individual top-level elements
+		# elementsMapToLists = { # add product to element map, duplicate checking should happen here
+		# 		product: productList,
+		# 	}
 
-		for key, value in elementsMapToLists.items(): # write new product, brand, and category nodes here
-			for k, v in value.items():
-				populateTags(key, k, v) # populate flat tags in product
+		#add the product to the product_dict list so we can account for multiple locales
+		if productList['ExternalId'] not in product_dict:
+			product_dict['ExternalId'] = []
+		
+		product_dict['ExternalId'].append(productList)
+
+	for key, value in product_dict.items(): # write new product, brand, and category nodes here
+		
+		for productList in value: 
+
+			product = SubElement(products, 'Product') # Define individual top-level elements
+		
+			for k, v in productList.items():
+				populateTags(product, k, v) # populate flat tags in product
 
 	# populate brand and category nodes
 	for key in brand_dict:
@@ -181,6 +196,7 @@ def generateFeed(options):
 
 	print 'Validating feed:'
 	clientProductFeed.write(root)
+	#root.write(clientProductFeed, encoding="utf-8", xml_declaration=True, default_namespace='')				
 	clientProductFeed.close()
 	subprocess.call(['xmllint --schema ' + schemaVersion + ' --noout ' + options.output], shell=True)
 
@@ -198,6 +214,8 @@ def main(argv):
 	parser.add_option('-o', '--output', help='Location of the XML output file', action='store', dest='output')
 	parser.add_option('-s', '--schema', default='5.1', help='The Bazaarvoice XML schema version', action='store', dest='schema')
 	parser.add_option('-t', '--type', default='csv', help='Defaults to csv filetype, can be XML instead', action='store', dest='feedtype')
+	parser.add_option('-l', '--locale', default='en_us', help='Defaults to en_us', action='store', dest='locale')
+
 
 	(options, args) = parser.parse_args()
 
