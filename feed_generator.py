@@ -17,9 +17,9 @@ product_dict = {}
 locales = {}
 productMap = {}
 _brandVariants = ['Name']
-_catVariants = ['Name', 'PageUrl', 'ImageUrl']
-_productVariants = ['Name', 'PageUrl', 'Description']
-
+_catVariants = ['Name', 'CategoryPageUrl', 'ImageUrl']
+_productVariants = ['Name', 'ProductPageUrl', 'Description', 'ImageUrl']
+_nodeVariants = ['Name',  'ProductPageUrl', 'Description', 'ImageUrl', 'CategoryPageUrl']
 
 def returnMap(options):
 
@@ -27,11 +27,14 @@ def returnMap(options):
 		product_Map = {
 		'Name': 0,
 		'ExternalId': 1,
-		'PageUrl': 2,
+		'ProductPageUrl': 2,
 		'Description': 3,
 		'ImageUrl': 4,
 		'CategoryExternalId': 5,
+		'CategoryPageUrl': 13,
 		'CategoryName': 6,
+		'CategoryImageUrl': 14,
+		'CategoryParentExternalId': 15,
 		'Brand': 7,
 		'BrandExternalId': 8,
 		'ManufacturerPartNumber': 9,
@@ -57,11 +60,11 @@ def returnMap(options):
 	return product_Map
 
 
-def populateProducts(parentTag, _dict):
+def populateTags(parentTag, _dict):
 	#
 	for k, v in _dict.items():
 
-		if k[:-1] in _productVariants or k == 'ProductPageUrls': #if the key(minus the 's') is one of the locale variants
+		if k[:-1] in _nodeVariants: #if the key(minus the 's') is one of the locale variants
 		
 			node = SubElement(parentTag, k) #create a subnode to store all the values
 
@@ -77,24 +80,9 @@ def populateProducts(parentTag, _dict):
 				subNode = SubElement(node, k)
 				subNode.text = item
 		
-		else:
+		elif v:
 			node = SubElement(parentTag, k)
 			node.text = v
-def populateBrands(parentTag, _dict):
-	#print str(_dict)
-	for k, v in _dict.items():
-		if k[:-1] in _brandVariants:
-			node = SubElement(parentTag, k)
-
-			for _lv in v:
-				for _k in _lv.keys(): 
-					subNode = SubElement(node, k[:-1])
-					subNode.set('locale', _k) 
-					subNode.text = _lv[_k]
-		else:
-			node = SubElement(parentTag, k)
-			node.text = v
-
 
 def localify(_pdict, options, _type):
 	'''
@@ -107,24 +95,19 @@ def localify(_pdict, options, _type):
 
 		_variants = _productVariants
 
-		for k, v in _pdict[options.locale].items():
-			if k == 'PageUrl':
-				_dict['ProductPageUrl'] = v
-
-			elif k != 'locale': 
-				_dict[k] = v
-
 	elif _type == 'brand': 
 		_variants = _brandVariants
 		
-		for _v in _variants:
-			_dict[_v] = _pdict[options.locale][_v]
-	
 	elif _type == 'category':
 		_variants = _catVariants
+	
+	for k, v in _pdict[options.locale].items():
 
-		for _v in _variants:
-			_dict[_v] = _pdict[options.locale][_v]
+		if k == 'CategoryParentExternalId':
+			k = 'ParentExternalId'
+
+		if k!= 'locale':
+			_dict[k] = v
 
 	for _lv in _variants: #for every locale variant
 
@@ -137,26 +120,12 @@ def localify(_pdict, options, _type):
 
 			_locale_pdict = {l : p[_lv]} # create a temporary dict with the locale/value
 			_localeVariantList.append(_locale_pdict) # store the dict in the list
-		
-		if _lv == 'PageUrl' and _type == 'product': 
-			_lv = 'ProductPageUrl'
 
 		_dict[_lv+'s'] = _localeVariantList # set the locale variant to the list just populated
-	
+
 	return _dict
 
-def returnLocaleList(tagTitle, p_dict):
-	_locale_list = []
-	_tag_dict = {}
-
-	for _locale in p_dict.keys():
-		_tag_dict[_locale] = p_dict[locale][tagTitle]
-		_locale_list.append(_tag_dict)
-	return _local_list
-
-
 def returnNode(line, value, options, xmlIndex=0):
-	global errors
 	try:
 		if options.feedtype == 'csv':
 			return line[value]
@@ -205,8 +174,9 @@ def checkNode(line, key, value, options, product_map):
 			category_dict[category_id][locale] = {
 				'Name': returnNode(line,product_map['CategoryName'],options),
 				'ExternalId': category_id,
-				'CategoryPageUrl': returnNode(line,product_map['PageUrl'],options),
-				'CategoryImageUrl': returnNode(line,product_map['ImageUrl'],options)
+				'CategoryPageUrl': returnNode(line,product_map['CategoryPageUrl'],options),
+				'CategoryParentExternalId': returnNode(line,product_map['CategoryParentExternalId'],options),
+				'ImageUrl': returnNode(line,product_map['CategoryImageUrl'],options)
 			}
 
 			return category_id
@@ -220,7 +190,7 @@ def checkNode(line, key, value, options, product_map):
 		except:
 			errors += '\nexception: ' + str(key) + str(value) + '\n'
 			return 0
-	elif key in ['Brand', 'CategoryName']: # Skip if one of these nodes is handled separately
+	elif key in ['Brand', 'CategoryName', 'CategoryPageUrl', 'CategoryImageUrl', 'CategoryParentExternalId']: # Skip if one of these nodes is handled separately
 	 	return 0
 	else:
 		return returnNode(line,value,options)
@@ -280,19 +250,15 @@ def generateFeed(options):
 	for externalId, locale in product_dict.items(): # write new product, brand, and category nodes here
 		
 		product = SubElement(products, 'Product') # Define individual top-level elements
-		populateProducts(product, localify(product_dict[externalId], options, 'product'))
+		populateTags(product, localify(product_dict[externalId], options, 'product'))
 
 	for externalId, locale in brand_dict.items(): 
 		brand = SubElement(brands, 'Brand')
-		populateBrands(brand, localify(brand_dict[externalId], options, 'brand'))
+		populateTags(brand, localify(brand_dict[externalId], options, 'brand'))
 
 	for externalId, locale in category_dict.items():
 		category = SubElement(categories, 'Category')
-		#\localify(category_dict[externalId], options, 'category')
-		# populateBrands(category, localify(category_dict[externalId], options, 'category'))
-
-		# populateTags(category, 'Name', category_dict[key]['Name'])
-		# populateTags(category, 'ExternalId', category_dict[key]['ExternalId'])
+		populateTags(category, localify(category_dict[externalId], options, 'category'))
 
 	# Format and pretty print XML
 	print 'Attempting to parse and write new feed'
@@ -301,7 +267,6 @@ def generateFeed(options):
 
 	print 'Validating feed:'
 	clientProductFeed.write(root)
-	#root.write(clientProductFeed, encoding="utf-8", xml_declaration=True, default_namespace='')				
 	clientProductFeed.close()
 	subprocess.call(['xmllint --schema ' + schemaVersion + ' --noout ' + options.output], shell=True)
 
