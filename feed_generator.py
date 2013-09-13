@@ -4,6 +4,7 @@ import logging
 from xml.etree.ElementTree import *
 from xml.dom.minidom import parseString
 from optparse import OptionParser
+import mapping
 
 ###################################################################
 # Nuts and bolts
@@ -14,51 +15,8 @@ errors = ''
 brand_dict = {}
 category_dict = {}
 product_dict = {}
-locales = {}
 productMap = {}
-_brandVariants = ['Name']
-_catVariants = ['Name', 'CategoryPageUrl', 'ImageUrl']
-_productVariants = ['Name', 'ProductPageUrl', 'Description', 'ImageUrl']
 _nodeVariants = ['Name',  'ProductPageUrl', 'Description', 'ImageUrl', 'CategoryPageUrl']
-
-def returnMap(options):
-
-	if options.feedtype == 'csv':
-		product_Map = {
-		'Name': 0,
-		'ExternalId': 1,
-		'ProductPageUrl': 2,
-		'Description': 3,
-		'ImageUrl': 4,
-		'CategoryExternalId': 5,
-		'CategoryPageUrl': 13,
-		'CategoryName': 6,
-		'CategoryImageUrl': 14,
-		'CategoryParentExternalId': 15,
-		'Brand': 7,
-		'BrandExternalId': 8,
-		'ManufacturerPartNumber': 9,
-		'UPC': 10,
-		'ModelNumber': 11,
-		'locale' : 12
-		}
-	if options.feedtype == 'xml':
-		product_Map = {
-		'Name': 'SHORT_DESCRIPTION',
-		'ExternalId': 'BASE_MODEL_NUMBER',
-		'ProductPageUrl': 'MODEL_NUMBER',
-		'Description': 'LONG_DESCRIPTION',
-		'ImageUrl': 'IMAGE_URL',
-		'CategoryName': 'CATEGORY_PATH_TEXT',
-		'CategoryExternalId': 'CATEGORY_ITEM_SEQ_NO',
-		'Brand': 'BRAND',
-		'BrandExternalId': 'BRAND_CODE',
-		'ManufacturerPartNumber': 'MODEL_SEQ_NO',
-		'UPC': 'UPC',
-		'ModelNumber': 'MODEL_NUMBER'
-		}
-	return product_Map
-
 
 def populateTags(parentTag, _dict):
 	#
@@ -93,20 +51,20 @@ def localify(_pdict, options, _type):
 	#setting up the default product dict, ignoring the locale definition
 	if _type == 'product':
 
-		_variants = _productVariants
+		_variants = ['Name', 'ProductPageUrl', 'Description', 'ImageUrl']
 
 	elif _type == 'brand': 
-		_variants = _brandVariants
+		_variants = ['Name']
 		
 	elif _type == 'category':
-		_variants = _catVariants
+		_variants = ['Name', 'CategoryPageUrl', 'ImageUrl']
 	
 	for k, v in _pdict[options.locale].items():
 
 		if k == 'CategoryParentExternalId':
 			k = 'ParentExternalId'
 
-		if k!= 'locale':
+		elif k!= 'locale':
 			_dict[k] = v
 
 	for _lv in _variants: #for every locale variant
@@ -127,10 +85,7 @@ def localify(_pdict, options, _type):
 
 def returnNode(line, value, options, xmlIndex=0):
 	try:
-		if options.feedtype == 'csv':
-			return line[value]
-		elif options.feedtype == 'xml':
-			return str(line.getElementsByTagName(value)[xmlIndex].firstChild.nodeValue)
+		return line[value]
 	except:
 		errors += '\nMissing: ' + str(value) + ': Line ' + str(line)
 		return 0
@@ -138,10 +93,7 @@ def returnNode(line, value, options, xmlIndex=0):
 def returnNodeList(line, value, options):
 	global errors
 	try:
-		if options.feedtype == 'csv':
-			return [item for item in returnNode(line,value,options).split('|')]
-		elif options.feedtype == 'xml':
-			return [returnNode(line,value,options,idx) for idx,item in enumerate(line.getElementsByTagName(value))]
+		return [item for item in returnNode(line,value,options).split('|')]
 	except:
 		return 0
 
@@ -194,7 +146,7 @@ def checkNode(line, key, value, options, product_map):
 	 	return 0
 	else:
 		return returnNode(line,value,options)
-
+		
 def getNode(line, productMap, options, global_map):
 	return {key: checkNode(line, key, value, options, global_map) for key, value in productMap.items()}
 
@@ -205,7 +157,7 @@ def generateFeed(options):
 	global product_dict
 
 	# Access files
-	clientFile = open(options.input) if options.feedtype == 'csv' else xml.dom.minidom.parse(options.input)
+	clientFile = open(options.input)
 	clientProductFeed = open(options.output, 'w')
 	if options.feedtype == 'csv':
 		dialect = csv.Sniffer().sniff(clientFile.read()) 
@@ -232,10 +184,10 @@ def generateFeed(options):
 
 	# Loop through input
 	# This starts the iteration at row two, thereby, ignoring the first row with titles
-	reader.next() if options.feedtype == 'csv' else xml.dom.minidom.parse(options.input)
+	reader.next()
 
 	# utility
-	product_Map = returnMap(options)
+	product_Map = mapping.returnMap()
 
 	for line in reader:
 		productList = {key: value for key, value in product_Map.items()} # copy map for given product
@@ -248,17 +200,19 @@ def generateFeed(options):
  	 	product_dict[productList['ExternalId']][productList['locale']] = productList # externalId: locale : productList
  
 	for externalId, locale in product_dict.items(): # write new product, brand, and category nodes here
-		
-		product = SubElement(products, 'Product') # Define individual top-level elements
-		populateTags(product, localify(product_dict[externalId], options, 'product'))
+		if externalId != '':
+			product = SubElement(products, 'Product') # Define individual top-level elements
+			populateTags(product, localify(product_dict[externalId], options, 'product'))
 
 	for externalId, locale in brand_dict.items(): 
-		brand = SubElement(brands, 'Brand')
-		populateTags(brand, localify(brand_dict[externalId], options, 'brand'))
+		if externalId != '':
+			brand = SubElement(brands, 'Brand')
+			populateTags(brand, localify(brand_dict[externalId], options, 'brand'))
 
 	for externalId, locale in category_dict.items():
-		category = SubElement(categories, 'Category')
-		populateTags(category, localify(category_dict[externalId], options, 'category'))
+		if externalId != '':
+			category = SubElement(categories, 'Category')
+			populateTags(category, localify(category_dict[externalId], options, 'category'))
 
 	# Format and pretty print XML
 	print 'Attempting to parse and write new feed'
