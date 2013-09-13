@@ -235,7 +235,6 @@ def main(argv):
 	parser.add_option('-i', '--input', help='Location of the CSV input file', action='store', dest='input')
 	parser.add_option('-o', '--output', help='Location of the XML output file', action='store', dest='output')
 	parser.add_option('-s', '--schema', default='5.1', help='The Bazaarvoice XML schema version', action='store', dest='schema')
-	parser.add_option('-t', '--type', default='csv', help='Defaults to csv filetype, can be XML instead', action='store', dest='feedtype')
 	parser.add_option('-l', '--locale', help='The default locale for this product feed -- needs to be set regardless if this is a multi-locale feed or not', action='store', dest='locale')
 
 
