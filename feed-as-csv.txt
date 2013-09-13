@@ -1,0 +1,6 @@
+product name	product id	product page url	product description	product image url	category id	category name	brand name	brand id	manufacturer part number	upc	model number	locale	catpageurl	catimageurl	catparent
+Dueler H/L	191	/tire/dueler-hl	test description down.	/_img/tire/dueler-hl/tile.png	12345	tires	bridgestone	bs-1234	123|234|345|456	123456	987654321	en_us	http://test.com	http://test	1
+R187	23	/tire/r187	An all-position rib pattern with sidewall protector ribs for resistance to cuts and abrasions.	/_img/tire/r187/tile.png	67890	rims	good year	gy-5678	123|234|345|456	123456	987654321	en_us	http://test.com	http://test	1
+R187	23	/tire/r187	An all-position rib pattern with sidewall protector ribs for resistance to cuts and abrasions.	/_img/tire/r187/tile.png	67890	rims	good French	gy-5678	123|234|345|456	123456	987654321	fr_ca	http://test.com	http://test	1
+					1	all cats						en_us	www.testpage.com		
+					1	all cats						fr_ca	www.testpage.fr		
